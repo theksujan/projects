@@ -6,13 +6,18 @@ export const signup = async (req, res) => {
   try {
     const { fullName, username, email, password } = req.body;
 
-    //check email format
+    // Ensure all required fields are provided
+    if (!fullName || !username || !email || !password) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    // check email format
     const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ error: "Invalid email format" });
     }
 
-    // check if user exists
+    // check if username exists
     const userExists = await User.findOne({ username });
     if (userExists) {
       return res.status(400).json({ error: "Username is already taken" });
@@ -24,10 +29,9 @@ export const signup = async (req, res) => {
       return res.status(400).json({ error: "Email is already taken" });
     }
 
+    // check password length
     if (password.length < 6) {
-      return res
-        .status(400)
-        .json({ error: "Password must be at least 6 characters long" });
+      return res.status(400).json({ error: "Password must be at least 6 characters long" });
     }
 
     // hash the password by setting salt
@@ -63,6 +67,7 @@ export const signup = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 
 export const login = async (req, res) => {
   try {
