@@ -3,6 +3,12 @@ import dotenv from 'dotenv';
 dotenv.config()
 import cookieParser from 'cookie-parser';
 import {v2 as cloudinary} from 'cloudinary';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get the current directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // cloudinary config
 cloudinary.config({
@@ -34,6 +40,13 @@ app.use('/api/users',userRoutes)
 app.use('/api/posts',postRoutes)
 app.use('/api/notifications',notificationRoutes)
 
+if(process.env.NODE_ENV === 'production'){
+    app.use(express.static(path.join(__dirname, '../frontend/dist')));
+}
+
+app.get("*",(req,res)=>{
+    res.sendFile(path.resolve(__dirname,".." ,"frontend","dist","index.html"));
+})
 
 
 
