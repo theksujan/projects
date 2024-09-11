@@ -118,12 +118,17 @@ export const likeUnlikePost = async (req, res) => {
       // Unlike post
       await Post.updateOne({ _id: postId }, { $pull: { likes: userId } });
       await User.updateOne({ _id: userId }, { $pull: { likedPosts: postId } });
-      res.status(200).json({ message: "Post unliked" });
+      const updatedLikes=post.likes.filter((id)=>id.toString()!==userId);
+      res.status(200).json(updatedLikes);
+
     } else {
       // Like post
-      post.likes.push(userId);
-      await User.updateOne({ _id: userId }, { $push: { likedPosts: postId } });
-      await post.save();
+      await Promise.all([
+        User.updateOne({ _id: userId }, { $push: { likedPosts: postId } }),
+        Post.updateOne({ _id: postId }, { $push: { likes: userId } })
+      ]);
+
+      const updatedLikes=post.likes
 
       // Create a notification
       const notification = new Notification({
@@ -131,9 +136,9 @@ export const likeUnlikePost = async (req, res) => {
         from: userId,
         to: postId,
       });
-
       await notification.save();
-      res.status(200).json({ message: "Post liked" });
+      
+      res.status(200).json(updatedLikes);
     }
   } catch (error) {
     console.log("Error in likeUnlikePost controller: " + error.message);
