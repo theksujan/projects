@@ -16,6 +16,7 @@ import { MdEdit } from "react-icons/md";
 import {  useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMemberSinceDate } from "../../utils/db/date";
 import toast from "react-hot-toast";
+import useUpdateUserProfile from "../../hooks/useUpdateUserProfile";
 
 const ProfilePage = () => {
 
@@ -56,32 +57,7 @@ const ProfilePage = () => {
 	
 
 	// mutation to update profile and cover image
-	const {mutate:updateProfile,isPending:isUpdating}=useMutation({
-		mutationFn:async()=>{
-			try {
-				const res=await fetch("/api/users/update",{
-					method:"POST",
-					headers:{
-                        "Content-Type": "application/json"
-                    },
-                    body:JSON.stringify({coverImg, profileImg}),
-				})
-				const data=await res.json();
-				if(!res.ok || data.error) throw new Error(data.error || "Failed to update profile");
-				return data;
-			} catch (error) {
-				throw new Error(error);
-			}
-		},
-		onSuccess: ()=>{
-			toast.success("Profile updated successfully")
-			Promise.all([
-				queryClient.invalidateQueries({queryKey:["authUser"]}),
-				queryClient.invalidateQueries({queryKey:["userProfile"]}),
-
-			])
-		}
-	})
+	const {updateProfile,isUpdating}=useUpdateUserProfile()
 
 	const handleImgChange = (e, state) => {
 		const file = e.target.files[0];
@@ -173,7 +149,11 @@ const ProfilePage = () => {
 								{(coverImg || profileImg) && (
 									<button
 										className='btn btn-primary rounded-full btn-sm text-white px-4 ml-2'
-										onClick={() => updateProfile()}
+										onClick={async() => {
+											await updateProfile({coverImg,profileImg})
+											setProfileImg(null);
+											setCoverImg(null);
+										}}
 									>
 										{isUpdating ?"Updating...":"Update"}
 									</button>
