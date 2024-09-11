@@ -24,8 +24,8 @@ const app = express();
 const PORT=process.env.PORT || 5000
 
 // middleware
-app.use(express.json()); // to parse req.body
-app.use(express.urlencoded({ extended:true})) // parse form data
+app.use(express.json({ limit: '10mb' }));  // parse request body 
+app.use(express.urlencoded({ limit: '10mb', extended: true })); // parse form body
 app.use(cookieParser()); 
 
 // Routes
