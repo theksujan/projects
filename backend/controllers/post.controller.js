@@ -61,37 +61,7 @@ export const deletePost = async (req, res) => {
   }
 };
 
-export const commentOnPost = async (req, res) => {
-    try {
-        
-        const {text}=req.body;
-        const postId=req.params.id;
-        const userId=req.user._id;
-        
-        if(!text){
-            return res.status(400).json({ message: "Text field is required" });
-        }
-         
-        const post=await Post.findById(req.params.id);
-        if(!post) return res.status(404).json({ message: "Post not found" });
 
-        const comment={
-            user: userId,
-            text
-        }
-
-        post.comments.push(comment);
-        await post.save();
-
-        res.status(200).json(post);
-
-
-    } catch (error) {
-        console.log("Error in commentOnPost controller: " + error);
-        return res.status(500).json({ error: "Internal Server Error" });
-    }
-
-}
 
 export const likeUnlikePost = async (req, res) => {
   try {
@@ -146,6 +116,39 @@ export const likeUnlikePost = async (req, res) => {
   }
 };
 
+export const commentOnPost = async (req, res) => {
+  try {
+      
+      const {text}=req.body;
+      const postId=req.params.id;
+      const userId=req.user._id;
+      
+      if(!text){
+          return res.status(400).json({ message: "Text field is required" });
+      }
+       
+      const post=await Post.findById(req.params.id);
+      if(!post) return res.status(404).json({ message: "Post not found" });
+
+      const comment={
+          user: userId,
+          text
+      }
+
+      post.comments.push(comment);
+      await post.save();
+
+      const updatedComments=post.comments
+
+      res.status(200).json(updatedComments);
+
+
+  } catch (error) {
+      console.log("Error in commentOnPost controller: " + error);
+      return res.status(500).json({ error: "Internal Server Error" });
+  }
+
+}
 
 export const getAllPosts = async(req, res) =>{
   try {

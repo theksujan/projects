@@ -7,88 +7,129 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import LoadingSpinner from "./LoadingSpinner";
-import {toast} from "react-hot-toast"
+import { toast } from "react-hot-toast";
+import { formatPostDate } from "../../utils/date";
 
 const Post = ({ post }) => {
   const { data: authUser } = useQuery({ queryKey: ["authUser"] });
-  
-  const queryClient=useQueryClient()
-  const {mutate:deletePost,isPending:isDeleting}=useMutation({
-	mutationFn:async ()=>{
-		try {
-			const res = await fetch(`/api/posts/${post._id}`, {
-                method: "DELETE",
-            });
-
-			const data=res.json
-			if(!res.ok){
-				throw new Error(data.error || "Somethig went wrong");
-			}
-
-			return data;
-		} catch (error) {
-			throw new Error(error)
-		}
-	},
-	onSuccess:()=>{
-        toast.success("Post deleted successfully");
-		//invalidate query
-		queryClient.invalidateQueries({ queryKey: ["posts"] });
-    }
-  })
-
-
-  const {mutate:likePost,isPending:isLiking}=useMutation({
-    mutationFn:async(postId)=>{
-      try {
-        const res=await fetch(`/api/posts/like/${post._id}`, {
-          method:"POST",
-        })
-
-        const data=await res.json();
-        if(!res.ok) throw new Error(data.error || "Somethint went wrong");
-        return data;
-
-      } catch (error) {
-        throw new Error(error.message);
-      }
-    },
-    onSuccess:(updatedLikes)=>{
-      // not best UX because it will refetch all posts
-      // queryClient.invalidateQueries({ queryKey: ["posts"] });
-      // instead we update the cache directly for that post
-      queryClient.setQueryData(["posts"],(oldData)=>
-         oldData.map((p)=>{
-            if(p._id===post._id){
-              return {...p,likes:updatedLikes}
-            }
-          return p;
-        })
-      )
-      
-
-    }
-  })
   const [comment, setComment] = useState("");
   const postOwner = post.user;
   const isLiked = post.likes.includes(authUser._id);
 
   const isMyPost = authUser._id === post.user._id;
 
-  const formattedDate = "1h";
+  const formattedDate = formatPostDate(post.createdAt)
 
-  const isCommenting = false;
+  const queryClient = useQueryClient();
+
+  
+  const { mutate: deletePost, isPending: isDeleting } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch(`/api/posts/${post._id}`, {
+          method: "DELETE",
+        });
+
+        const data = res.json;
+        if (!res.ok) {
+          throw new Error(data.error || "Somethig went wrong");
+        }
+
+        return data;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+    onSuccess: () => {
+      toast.success("Post deleted successfully");
+      //invalidate query
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+    },
+  });
+
+  const { mutate: likePost, isPending: isLiking } = useMutation({
+    mutationFn: async (postId) => {
+      try {
+        const res = await fetch(`/api/posts/like/${post._id}`, {
+          method: "POST",
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Somethint went wrong");
+        return data;
+      } catch (error) {
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: (updatedLikes) => {
+      // not best UX because it will refetch all posts
+      // queryClient.invalidateQueries({ queryKey: ["posts"] });
+      // instead we update the cache directly for that post
+      queryClient.setQueryData(["posts"], (oldData) =>
+        oldData.map((p) => {
+          if (p._id === post._id) {
+            return { ...p, likes: updatedLikes };
+          }
+          return p;
+        })
+      );
+    },
+  });
+
+  const { mutate: commentPost, isPending: isCommenting } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch(`/api/posts/comment/${post._id}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ text: comment }),
+        });
+  
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Something went wrong");
+        return data; // Ensure this returns the updated post with new comment
+      } catch (error) {
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: (updatedComments) => {
+      toast.success("Comment posted successfully");
+      setComment("");
+      // Update the cache directly for that post
+      queryClient.setQueryData(["posts"], (oldData) =>
+        oldData.map((p) => {
+          if (p._id === post._id) {
+            return { ...p, comments: updatedComments };
+          }
+          return p;
+        })
+      );
+      // close the modal
+      const modal = document.getElementById(`comments_modal${post._id}`);
+      if (modal) modal.close();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+  
+
+ 
 
   const handleDeletePost = () => {
     deletePost();
   };
 
   const handlePostComment = (e) => {
-    e.preventDefault();
-  };
+  e.preventDefault();
+  if (isCommenting) return; // Avoid multiple submissions
+  commentPost();
+};
 
   const handleLikePost = () => {
-    if(isLiking) return;
+    if (isLiking) return;
     likePost(post._id);
   };
 
@@ -224,11 +265,11 @@ const Post = ({ post }) => {
                 className="flex gap-1 items-center group cursor-pointer"
                 onClick={handleLikePost}
               >
-                {isLiking&& <LoadingSpinner size="sm"/>}
+                {isLiking && <LoadingSpinner size="sm" />}
                 {!isLiked && !isLiking && (
                   <FaRegHeart className="w-4 h-4 cursor-pointer text-slate-500 group-hover:text-pink-500" />
                 )}
-                {isLiked && !isLiking&&(
+                {isLiked && !isLiking && (
                   <FaRegHeart className="w-4 h-4 cursor-pointer text-pink-500 " />
                 )}
 
