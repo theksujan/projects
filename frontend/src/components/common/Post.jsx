@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import LoadingSpinner from "./LoadingSpinner";
 import {toast} from "react-hot-toast"
+import { formatPostDate } from "../../utils/db/date";
 
 const Post = ({ post }) => {
   const { data: authUser } = useQuery({ queryKey: ["authUser"] });
@@ -75,7 +76,7 @@ const Post = ({ post }) => {
 
   const isMyPost = authUser._id === post.user._id;
 
-  const formattedDate = "1h";
+  const formattedDate = formatPostDate(post.createdAt);
 
   const isCommenting = false;
 
